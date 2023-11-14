@@ -9,7 +9,7 @@ import { AuthUser, DbClientContract } from '../../types';
 import { hasAllFields } from '../../validation';
 import { makeProxy } from '../proxy';
 import type { CommonEnhancementOptions, PolicyDef, ZodSchemas } from '../types';
-import { getIdFields } from '../utils';
+import { getIdFields, loadPrismaModule } from '../utils';
 import { PolicyProxyHandler } from './handler';
 
 /**
@@ -42,6 +42,8 @@ export interface WithPolicyOptions extends CommonEnhancementOptions {
      * Whether to log Prisma query
      */
     logPrismaQuery?: boolean;
+
+    prismaModule?: any;
 }
 
 /**
@@ -71,6 +73,7 @@ export function withPolicy<DbClient extends object>(
     const _policy = options?.policy ?? getDefaultPolicy(options?.loadPath);
     const _modelMeta = options?.modelMeta ?? getDefaultModelMeta(options?.loadPath);
     const _zodSchemas = options?.zodSchemas ?? getDefaultZodSchemas(options?.loadPath);
+    const _prismaModule = options?.prismaModule ?? loadPrismaModule(prisma);
 
     // validate user context
     if (context?.user && _modelMeta.authModel) {
@@ -98,7 +101,8 @@ export function withPolicy<DbClient extends object>(
                 _zodSchemas,
                 model,
                 context?.user,
-                options?.logPrismaQuery
+                options?.logPrismaQuery,
+                _prismaModule
             ),
         'policy'
     );

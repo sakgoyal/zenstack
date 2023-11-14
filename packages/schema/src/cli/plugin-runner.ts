@@ -3,10 +3,13 @@
 import type { DMMF } from '@prisma/generator-helper';
 import { isPlugin, Model, Plugin } from '@zenstackhq/language/ast';
 import {
+    createProject,
+    emitProject,
     getDataModels,
     getDMMF,
     getLiteral,
     getLiteralArray,
+    getPrismaVersion,
     hasValidationAttributes,
     PluginError,
     PluginFunction,
@@ -20,6 +23,7 @@ import path from 'path';
 import { ensureDefaultOutputFolder } from '../plugins/plugin-utils';
 import telemetry from '../telemetry';
 import { getVersion } from '../utils/version-utils';
+import semver from 'semver';
 
 type PluginInfo = {
     name: string;
@@ -49,7 +53,7 @@ export class PluginRunner {
         const version = getVersion();
         console.log(colors.bold(`⌛️ ZenStack CLI v${version}, running plugins`));
 
-        ensureDefaultOutputFolder(options);
+        const outDir = ensureDefaultOutputFolder(options);
 
         const plugins: PluginInfo[] = [];
         const pluginDecls = options.schema.declarations.filter((d): d is Plugin => isPlugin(d));
@@ -162,6 +166,9 @@ export class PluginRunner {
                 });
             }
         }
+
+        await generateEnhance(outDir, plugins);
+
         console.log(colors.green(colors.bold('\n👻 All plugins completed successfully!')));
 
         warnings.forEach((w) => console.warn(colors.yellow(w)));
@@ -307,4 +314,38 @@ export class PluginRunner {
         }
         return pluginModulePath;
     }
+}
+
+async function generateEnhance(outDir: string, plugins: PluginInfo[]) {
+    const hasZod = plugins.some((p) => p.provider === '@core/zod');
+    const prismaVersion = getPrismaVersion();
+    const project = createProject();
+    const source = `
+import { enhance as _enhance, type WithPolicyContext, type EnhancementOptions } from '@zenstackhq/runtime';
+import modelMeta from './model-meta';
+import policy from './policy';
+${hasZod ? "import zodSchemas from './zod';" : ''}
+${
+    semver.gte(prismaVersion, '5.0.0')
+        ? 'import { Prisma } from "@prisma/client";'
+        : 'import { Prisma } from "@prisma/client/runtime";'
+}
+
+export function enhance<T extends object>(prisma: T, context?: WithPolicyContext, options?: EnhancementOptions): T {
+
+    const _options = {
+        ...options,
+        modelMeta,
+        policy,
+        prismaModule: Prisma,
+        ${hasZod ? 'zodSchemas: zodSchemas as any,' : ''}
+    };
+
+    return _enhance<T>(prisma, context, _options);
+}
+
+    `;
+
+    project.createSourceFile(path.join(outDir, 'enhance.ts'), source);
+    await emitProject(project);
 }

@@ -1,10 +1,8 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 
 import { lowerCaseFirst } from 'lower-case-first';
-import path from 'path';
 import * as util from 'util';
 import type { ModelMeta } from '../cross';
-import type { DbClientContract } from '../types';
 
 /**
  * Gets id fields for the given model.
@@ -29,7 +27,8 @@ export function getIdFields(modelMeta: ModelMeta, model: string, throwIfNotFound
  * Formats an object for pretty printing.
  */
 export function formatObject(value: unknown) {
-    return util.formatWithOptions({ depth: 20 }, value);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return util.formatWithOptions ? util.formatWithOptions({ depth: 20 }, value) : (value as any).toString();
 }
 
 let _PrismaClientValidationError: new (...args: unknown[]) => Error;
@@ -37,7 +36,8 @@ let _PrismaClientKnownRequestError: new (...args: unknown[]) => Error;
 let _PrismaClientUnknownRequestError: new (...args: unknown[]) => Error;
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-function loadPrismaModule(prisma: any) {
+export function loadPrismaModule(prisma: any) {
+    const path = require('path');
     // https://github.com/prisma/prisma/discussions/17832
     if (prisma._engineConfig?.datamodelPath) {
         // try engine path first
@@ -74,26 +74,26 @@ function loadPrismaModule(prisma: any) {
     }
 }
 
-export function prismaClientValidationError(prisma: DbClientContract, message: string) {
+export function prismaClientValidationError(prismaModule: any, message: string) {
     if (!_PrismaClientValidationError) {
-        const _prisma = loadPrismaModule(prisma);
-        _PrismaClientValidationError = _prisma.PrismaClientValidationError;
+        // const _prisma = prismaModule ?? loadPrismaModule(prisma);
+        _PrismaClientValidationError = prismaModule.PrismaClientValidationError;
     }
-    throw new _PrismaClientValidationError(message, { clientVersion: prisma._clientVersion });
+    throw new _PrismaClientValidationError(message, { clientVersion: prismaModule._clientVersion });
 }
 
-export function prismaClientKnownRequestError(prisma: DbClientContract, ...args: unknown[]) {
+export function prismaClientKnownRequestError(prismaModule: any, ...args: unknown[]) {
     if (!_PrismaClientKnownRequestError) {
-        const _prisma = loadPrismaModule(prisma);
-        _PrismaClientKnownRequestError = _prisma.PrismaClientKnownRequestError;
+        // const _prisma = loadPrismaModule(prisma);
+        _PrismaClientKnownRequestError = prismaModule.PrismaClientKnownRequestError;
     }
     return new _PrismaClientKnownRequestError(...args);
 }
 
-export function prismaClientUnknownRequestError(prisma: DbClientContract, ...args: unknown[]) {
+export function prismaClientUnknownRequestError(prismaModule: any, ...args: unknown[]) {
     if (!_PrismaClientUnknownRequestError) {
-        const _prisma = loadPrismaModule(prisma);
-        _PrismaClientUnknownRequestError = _prisma.PrismaClientUnknownRequestError;
+        // const _prisma = loadPrismaModule(prisma);
+        _PrismaClientUnknownRequestError = prismaModule.PrismaClientUnknownRequestError;
     }
     throw new _PrismaClientUnknownRequestError(...args);
 }

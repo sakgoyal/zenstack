@@ -50,7 +50,8 @@ export class PolicyUtil {
         private readonly policy: PolicyDef,
         private readonly zodSchemas: ZodSchemas | undefined,
         private readonly user?: AuthUser,
-        private readonly shouldLogQuery = false
+        private readonly shouldLogQuery = false,
+        private readonly prismaModule?: any
     ) {
         this.logger = new Logger(db);
     }
@@ -949,25 +950,25 @@ export class PolicyUtil {
         }
 
         return prismaClientKnownRequestError(
-            this.db,
+            this.prismaModule,
             `denied by policy: ${model} entities failed '${operation}' check${extra ? ', ' + extra : ''}`,
             args
         );
     }
 
     notFound(model: string) {
-        return prismaClientKnownRequestError(this.db, `entity not found for model ${model}`, {
+        return prismaClientKnownRequestError(this.prismaModule, `entity not found for model ${model}`, {
             clientVersion: getVersion(),
             code: 'P2025',
         });
     }
 
     validationError(message: string) {
-        return prismaClientValidationError(this.db, message);
+        return prismaClientValidationError(this.prismaModule, message);
     }
 
     unknownError(message: string) {
-        return prismaClientUnknownRequestError(this.db, message, {
+        return prismaClientUnknownRequestError(this.prismaModule, message, {
             clientVersion: getVersion(),
         });
     }

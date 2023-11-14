@@ -1,14 +1,10 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 
 import type { DMMF } from '@prisma/generator-helper';
-import { getPrismaVersion } from '@zenstackhq/runtime';
 import path from 'path';
 import * as semver from 'semver';
 import { GeneratorDecl, Model, Plugin, isGeneratorDecl, isPlugin } from './ast';
 import { getLiteral } from './utils';
-
-// reexport
-export { getPrismaVersion } from '@zenstackhq/runtime';
 
 /**
  * Given a ZModel and an import context directory, compute the import spec for the Prisma Client.
@@ -89,5 +85,32 @@ export function getDMMF(options: GetDMMFOptions): Promise<DMMF.Document> {
     } else {
         const _getDMMF = require('@prisma/internals').getDMMF;
         return _getDMMF(options);
+    }
+}
+
+/**
+ * Gets installed Prisma version by first checking "@prisma/client" and if not available,
+ * "prisma".
+ */
+export function getPrismaVersion(): string {
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        return require('@prisma/client/package.json').version;
+    } catch {
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            return require('prisma/package.json').version;
+        } catch {
+            if (process.env.ZENSTACK_TEST === '1') {
+                // test environment
+                try {
+                    return require(path.resolve('./node_modules/@prisma/client/package.json')).version;
+                } catch {
+                    return '5.0.0';
+                }
+            }
+
+            return '5.0.0';
+        }
     }
 }

@@ -9,7 +9,7 @@ export const ALL_OPERATION_KINDS: PolicyOperationKind[] = ['create', 'update', '
 /**
  * Gets the nearest "node_modules" folder by walking up from start path.
  */
-export function getNodeModulesFolder(startPath?: string): string | undefined {
+export function getNodeModulesFolder(startPath?: string): string {
     startPath = startPath ?? process.cwd();
     if (startPath.endsWith('node_modules')) {
         return startPath;
@@ -19,7 +19,7 @@ export function getNodeModulesFolder(startPath?: string): string | undefined {
         const parent = path.join(startPath, '..');
         return getNodeModulesFolder(parent);
     } else {
-        return undefined;
+        return './node_modules';
     }
 }
 
@@ -81,5 +81,5 @@ export function getDefaultOutputFolder(globalOptions?: PluginGlobalOptions) {
         runtimeModulePath = path.join(runtimeModulePath, '..');
     }
     const modulesFolder = getNodeModulesFolder(runtimeModulePath);
-    return modulesFolder ? path.join(modulesFolder, DEFAULT_RUNTIME_LOAD_PATH) : undefined;
+    return path.join(modulesFolder, DEFAULT_RUNTIME_LOAD_PATH);
 }

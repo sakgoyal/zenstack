@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-import path from 'path';
 import { ModelMeta, PolicyDef, ZodSchemas } from './enhancements';
 
 /**
@@ -9,6 +8,7 @@ import { ModelMeta, PolicyDef, ZodSchemas } from './enhancements';
  * will use default load path.
  */
 export function getDefaultModelMeta(loadPath: string | undefined): ModelMeta {
+    const path = require('path');
     try {
         if (loadPath) {
             const toLoad = path.resolve(loadPath, 'model-meta');
@@ -36,6 +36,7 @@ export function getDefaultModelMeta(loadPath: string | undefined): ModelMeta {
  * will use default load path.
  */
 export function getDefaultPolicy(loadPath: string | undefined): PolicyDef {
+    const path = require('path');
     try {
         if (loadPath) {
             const toLoad = path.resolve(loadPath, 'policy');
@@ -67,6 +68,7 @@ export function getDefaultPolicy(loadPath: string | undefined): PolicyDef {
  * will use default load path.
  */
 export function getDefaultZodSchemas(loadPath: string | undefined): ZodSchemas | undefined {
+    const path = require('path');
     try {
         if (loadPath) {
             const toLoad = path.resolve(loadPath, 'zod');
